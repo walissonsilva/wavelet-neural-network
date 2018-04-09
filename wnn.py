@@ -1,0 +1,117 @@
+import matplotlib.pyplot as plt  # Para plotar graficos
+import numpy as np  # Array do Python
+from math  import sqrt, pi
+
+class WNN(object):
+    def __init__(self, eta=0.01, epoch_max=50000, Ni=1, Nh=12, Ns=1):
+        ### Inicializando parametros
+        self.eta = eta
+        self.epoch_max = epoch_max
+        self.Ni = Ni
+        self.Nh = Nh
+        self.Ns = Ns
+        self.Aini = 0.01
+
+    def load_first_function(self):
+        x = np.arange(-6, 6, 0.2)
+        self.N = x.shape[0]
+        xmax = np.max(x)
+
+        self.X_train = x / xmax
+        self.d = 1 / (1 + np.exp(-1 * x))*(np.cos(x) - np.sin(x))
+
+    def sig_dev2(self, theta):
+        return 2*(1 / (1 + np.exp(-theta)))**3 - 3*(1 / (1 + np.exp(-theta)))**2 + (1 / (1 + np.exp(-theta)))
+
+    def sig_dev3(self, theta):
+        return -6*(1 / (1 + np.exp(-theta)))**4 + 12*(1 / (1 + np.exp(-theta)))**3 - 7*(1 / (1 + np.exp(-theta)))**2 + (1 / (1 + np.exp(-theta)))
+    
+    def train(self):
+        ### Inicializando os pesos
+        self.A = np.random.rand(self.Ns, self.Nh) * self.Aini
+
+        ### Inicializando os centros
+        self.t = np.zeros((1, self.Nh))
+
+        idx = np.random.permutation(self.Nh)
+        for j in xrange(self.Nh):
+            self.t[0,j] = self.d[idx[j]]
+        
+        ### Inicializando as larguras
+        DEmax = 0
+        for j in xrange(self.Nh):
+            for i in xrange(self.Nh):
+                if (i > j):
+                    DE = (self.t[0,i] - self.t[0,j])**2
+                    if (DE > DEmax):
+                        DEmax = DE
+
+        self.R = np.random.rand(1, self.Nh) * ((DEmax**2) / self.Nh) * 100
+        print self.R
+
+        MSE = np.zeros(self.epoch_max)
+        plt.ion()
+
+        for epoca in xrange(self.epoch_max):
+            z = np.zeros(self.N)
+            E = np.zeros(self.N)
+
+            for i in xrange(self.N):
+                xi = np.array([self.X_train[i]]).reshape(1, -1)
+                netj = self.t * xi.T
+                theta = (netj - self.t) / self.R + 1e-7
+                #print theta
+                yj = self.sig_dev2(theta)
+                #print self.A.shape, yj.T.shape
+                z[i] = np.dot(self.A, yj.T)[0][0]
+
+                e = self.d[i] - z[i]
+                self.A = self.A + (self.eta * e * self.sig_dev2(theta))
+                self.t = self.t - (self.eta * e * self.A / self.R * self.sig_dev3(theta))
+                self.R = self.R - (((self.eta * e * self.A * (netj - self.t)) / self.R**2) * self.sig_dev3(theta))
+
+                E[i] = 0.5 * e**2
+
+            MSE[epoca] = np.sum(E) / self.N
+
+            if (epoca % 200 == 0 or epoca == self.epoch_max - 1):
+                if (epoca != 0):
+                    plt.cla()
+                    plt.clf()
+                
+                self.plot(z, epoca)
+        
+        print MSE[-1]
+
+        plt.ioff()
+        plt.figure(1)
+        plt.title('Mean Square Error (MSE)')
+        plt.xlabel('Training Epochs')
+        plt.ylabel('MSE')
+        plt.plot(np.arange(0, MSE.size), MSE)
+        plt.show()
+
+    def plot(self, saida, epoca):
+        plt.figure(0)
+        y, = plt.plot(self.X_train, saida, label="y")
+        d, = plt.plot(self.X_train, self.d, label="d")
+        plt.legend([y, d], ['Output of Network Neural', 'Desired Value'])
+        plt.xlabel('x')
+        plt.ylabel('f(x)')
+        plt.text(np.min(self.X_train) - np.max(self.X_train) * 0.17  , np.min(self.d) - np.max(self.d) * 0.17, 'Progress: ' + str(round(float(epoca) / self.epoch_max * 100, 2)) + '%')
+        plt.axis([np.min(self.X_train) - np.max(self.X_train) * 0.2, np.max(self.X_train) * 1.2, np.min(self.d) - np.max(self.d) * 0.2, np.max(self.d) * 1.4])
+        plt.show()
+        plt.pause(1e-10)
+
+    def show_function(self):
+        plt.figure(0)
+        plt.title('Function')
+        plt.xlabel('x')
+        plt.ylabel('f(x)')
+        plt.plot(self.X_train, self.d)
+        plt.show()
+
+wnn = WNN()
+
+wnn.load_first_function()
+wnn.train()
