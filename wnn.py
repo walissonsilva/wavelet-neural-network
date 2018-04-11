@@ -1,10 +1,9 @@
 import matplotlib.pyplot as plt  # Para plotar graficos
 import numpy as np  # Array do Python
-import pandas as pd
 from math  import sqrt, pi
 
 class WNN(object):
-    def __init__(self, eta=0.005, epoch_max=50000, Ni=1, Nh=40, Ns=1):
+    def __init__(self, eta=0.008, epoch_max=50000, Ni=1, Nh=40, Ns=1):
         ### Inicializando parametros
         self.eta = eta
         self.epoch_max = epoch_max
@@ -14,13 +13,13 @@ class WNN(object):
         self.Aini = 0.01
 
     def load_first_function(self):
-        x = np.arange(-6, 6, 0.2)
+        x = np.arange(-6, 6, 0.15)
         self.N = x.shape[0]
         xmax = np.max(x)
 
         self.X_train = x / xmax
-        self.d = 1 / (1 + np.exp(-1 * x))*(np.cos(x) - np.sin(x))
-        #self.d = np.sin(x)
+        #self.d = 1 / (1 + np.exp(-1 * x))*(np.cos(x) - np.sin(x))
+        self.d = np.sin(x)
 
     def sig_dev2(self, theta):
         return 2*(1 / (1 + np.exp(-theta)))**3 - 3*(1 / (1 + np.exp(-theta)))**2 + (1 / (1 + np.exp(-theta)))
